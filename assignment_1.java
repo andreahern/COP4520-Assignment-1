@@ -1,19 +1,34 @@
-public class assignment_1 {
-    public static void main(String[] args) {
-        Thread t1 = new MyThread();
 
-        t1.run();
+public class assignment_1 {
+    static final int THREAD_COUNT = 8;
+    static final long SEARCH_SPACE = 10000000000L;
+
+    public static void main(String[] args) throws Exception {
+        Thread[] threads = new Thread[THREAD_COUNT];
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            threads[i] = new Thread(new GetPrimes(i));
+            threads[i].start();
+        }
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            threads[i].join();
+        }
     }
 }
 
-class MyThread extends Thread {
-    int[] values = { 6, 5, 1, 7, 8 };
+class GetPrimes implements Runnable {
+    final int ID;
+
+    public GetPrimes(int ID) {
+        this.ID = ID;
+    }
 
     public void run() {
-        for (int i = 0; i < 5; i++) {
-            values[i] = values[i] * 2;
+        for (long i = 0; i < assignment_1.SEARCH_SPACE; i++) {
+            if (i % assignment_1.THREAD_COUNT == ID) {
+                // Do STUFF
+            }
         }
-        System.out.println("MY Values");
-        System.out.println(values[0]);
     }
 }
