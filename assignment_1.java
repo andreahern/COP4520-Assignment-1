@@ -1,13 +1,17 @@
+import java.util.ArrayList;
+
 public class assignment_1 {
     public static final int THREAD_COUNT = 8;
     public static final long SEARCH_SPACE = 100_000_000;
     static SharedCounter counter = new SharedCounter(3);
     static SharedCounter primeCount = new SharedCounter(1);
     static SharedCounter primeSum = new SharedCounter(2);
+    static ArrayList<Long> largestPrimes = new ArrayList<>(10);
 
     public static void main(String[] args) throws Exception {
         final long startTime = System.nanoTime();
         Thread[] threads = new Thread[THREAD_COUNT];
+        largestPrimes.add(2L);
 
         for (int i = 0; i < THREAD_COUNT; i++) {
             threads[i] = new Thread(new GetPrimes(counter, primeCount, primeSum));
@@ -18,10 +22,17 @@ public class assignment_1 {
             threads[i].join();
         }
 
+        largestPrimes.sort(null);
+        String largest_10 = largestPrimes.subList(largestPrimes.size() - 10, largestPrimes.size()).toString();
         final double seconds = (double) (System.nanoTime() - startTime) / 1_000_000_000;
 
-        System.out.printf("Runtime:\t%.2f secs\tTotal Primes:\t%d\tPrime Sum:\t%d%n", seconds, primeCount.get(),
+        System.out.printf("%.2f %d %d%n", seconds, primeCount.get(),
                 primeSum.get());
+        System.out.println(largest_10);
+    }
+
+    public static synchronized void addPrime(long prime) {
+        largestPrimes.add(prime);
     }
 }
 
@@ -53,6 +64,7 @@ class GetPrimes implements Runnable {
         long num;
         while ((num = counter.getAndIncrement(2)) <= assignment_1.SEARCH_SPACE) {
             if (isPrime(num)) {
+                assignment_1.addPrime(num);
                 primeCount.increment(1);
                 primeSum.increment(num);
             }
