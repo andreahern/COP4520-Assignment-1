@@ -1,20 +1,22 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class assignment_1 {
     public static final int THREAD_COUNT = 8;
-    public static final long SEARCH_SPACE = 100_000_000;
-    static SharedCounter counter = new SharedCounter(3);
-    static SharedCounter primeCount = new SharedCounter(1);
-    static SharedCounter primeSum = new SharedCounter(2);
+    public static final int SEARCH_SPACE = 100_000_000;
+    static SharedCounter primeCount = new SharedCounter(0);
+    static SharedCounter primeSum = new SharedCounter(0);
     static ArrayList<Long> largestPrimes = new ArrayList<>(10);
 
     public static void main(String[] args) throws Exception {
         final long startTime = System.nanoTime();
+        final int rangeMult = SEARCH_SPACE / THREAD_COUNT;
+
         Thread[] threads = new Thread[THREAD_COUNT];
-        largestPrimes.add(2L);
 
         for (int i = 0; i < THREAD_COUNT; i++) {
-            threads[i] = new Thread(new GetPrimes(counter, primeCount, primeSum));
+            threads[i] = new Thread(
+                    new GetPrimes(rangeMult * i == 0 ? 2 : rangeMult * i, rangeMult * (i + 1), primeCount, primeSum));
             threads[i].start();
         }
 
@@ -23,6 +25,7 @@ public class assignment_1 {
         }
 
         largestPrimes.sort(null);
+
         String largest_10 = largestPrimes.subList(largestPrimes.size() - 10, largestPrimes.size()).toString();
         final double seconds = (double) (System.nanoTime() - startTime) / 1_000_000_000;
 
@@ -37,36 +40,63 @@ public class assignment_1 {
 }
 
 class GetPrimes implements Runnable {
-    SharedCounter counter;
+    int low;
+    int high;
     SharedCounter primeCount;
     SharedCounter primeSum;
 
-    public GetPrimes(SharedCounter counter, SharedCounter primeCount, SharedCounter primeSum) {
-        this.counter = counter;
+    public GetPrimes(int low, int high, SharedCounter primeCount, SharedCounter primeSum) {
+        this.low = low;
+        this.high = high;
         this.primeCount = primeCount;
         this.primeSum = primeSum;
     }
 
-    private boolean isPrime(long n) {
-        if (n == 3)
-            return true;
-        if ((n & 1) == 0 || n % 3 == 0)
-            return false;
-        long sqrtN = (long) Math.sqrt(n) + 1;
-        for (long i = 6L; i <= sqrtN; i += 6) {
-            if (n % (i - 1) == 0 || n % (i + 1) == 0)
-                return false;
+    public static void addPrimes(ArrayList<Integer> primes, int high) {
+        boolean[] sieve = new boolean[high - 1];
+        Arrays.fill(sieve, true);
+
+        for (int i = 2; i * i <= high; i++) {
+            if (sieve[i - 2] == true) {
+                int highSqrt = (int) Math.sqrt(high);
+                for (int j = i * i; j <= highSqrt; j += i) {
+                    sieve[j - 2] = false;
+                }
+            }
         }
-        return true;
+        for (int i = 2; i * i <= high; i++) {
+            if (sieve[i - 2] == true) {
+                primes.add(i);
+            }
+        }
     }
 
     public void run() {
-        long num;
-        while ((num = counter.getAndIncrement(2)) <= assignment_1.SEARCH_SPACE) {
-            if (isPrime(num)) {
-                assignment_1.addPrime(num);
+        ArrayList<Integer> primes = new ArrayList<Integer>();
+        addPrimes(primes, high);
+
+        boolean[] res = new boolean[high - low + 1];
+        Arrays.fill(res, true);
+
+        for (int prime : primes) {
+            int firstMult = (low / prime);
+            if (firstMult <= 1) {
+                firstMult = prime + prime;
+            } else if (low % prime != 0) {
+                firstMult = (firstMult * prime) + prime;
+            } else {
+                firstMult = firstMult * prime;
+            }
+            for (int j = firstMult; j <= high; j += prime) {
+                res[j - low] = false;
+            }
+        }
+
+        for (int i = low; i <= high; i++) {
+            if (res[i - low] == true) {
                 primeCount.increment(1);
-                primeSum.increment(num);
+                primeSum.increment(i);
+                assignment_1.addPrime(i);
             }
         }
     }
