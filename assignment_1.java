@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -11,6 +14,8 @@ public class assignment_1 {
     public static void main(String[] args) throws Exception {
         final long startTime = System.nanoTime();
         final int rangeMult = SEARCH_SPACE / THREAD_COUNT;
+        File file = new File("primes.txt");
+        PrintWriter writer = new PrintWriter(file);
 
         Thread[] threads = new Thread[THREAD_COUNT];
 
@@ -29,9 +34,10 @@ public class assignment_1 {
         String largest_10 = largestPrimes.subList(largestPrimes.size() - 10, largestPrimes.size()).toString();
         final double seconds = (double) (System.nanoTime() - startTime) / 1_000_000_000;
 
-        System.out.printf("%.2f %d %d%n", seconds, primeCount.get(),
+        writer.printf("%.2f %d %d%n", seconds, primeCount.get(),
                 primeSum.get());
-        System.out.println(largest_10);
+        writer.println(largest_10);
+        writer.close();
     }
 
     public static synchronized void addPrime(long prime) {
