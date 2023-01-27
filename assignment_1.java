@@ -1,5 +1,4 @@
 import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +20,8 @@ public class assignment_1 {
 
         for (int i = 0; i < THREAD_COUNT; i++) {
             threads[i] = new Thread(
-                    new GetPrimes(rangeMult * i == 0 ? 2 : rangeMult * i, rangeMult * (i + 1), primeCount, primeSum));
+                    new GetPrimes(i + 1, rangeMult * i == 0 ? 2 : rangeMult * i, rangeMult * (i + 1), primeCount,
+                            primeSum));
             threads[i].start();
         }
 
@@ -29,9 +29,7 @@ public class assignment_1 {
             threads[i].join();
         }
 
-        largestPrimes.sort(null);
-
-        String largest_10 = largestPrimes.subList(largestPrimes.size() - 10, largestPrimes.size()).toString();
+        String largest_10 = largestPrimes.toString();
         final double seconds = (double) (System.nanoTime() - startTime) / 1_000_000_000;
 
         writer.printf("%.2f %d %d%n", seconds, primeCount.get(),
@@ -41,17 +39,19 @@ public class assignment_1 {
     }
 
     public static synchronized void addPrime(long prime) {
-        largestPrimes.add(prime);
+        largestPrimes.add(0, prime);
     }
 }
 
 class GetPrimes implements Runnable {
+    int ID;
     int low;
     int high;
     SharedCounter primeCount;
     SharedCounter primeSum;
 
-    public GetPrimes(int low, int high, SharedCounter primeCount, SharedCounter primeSum) {
+    public GetPrimes(int ID, int low, int high, SharedCounter primeCount, SharedCounter primeSum) {
+        this.ID = ID;
         this.low = low;
         this.high = high;
         this.primeCount = primeCount;
@@ -98,11 +98,14 @@ class GetPrimes implements Runnable {
             }
         }
 
-        for (int i = low; i <= high; i++) {
+        int biggestPrimesCount = 0;
+        for (int i = high; i >= low; i--) {
             if (res[i - low] == true) {
                 primeCount.increment(1);
                 primeSum.increment(i);
-                assignment_1.addPrime(i);
+                if (ID == assignment_1.THREAD_COUNT && biggestPrimesCount++ < 10) {
+                    assignment_1.addPrime(i);
+                }
             }
         }
     }
